@@ -71,12 +71,14 @@ public class DigiClock extends JFrame {
     private static Font loadFont() {
         Font font;
         try {
-            var is = ClockUtil.class.getResourceAsStream("E1234.ttf");
+            var is = ClockUtil.class.getResourceAsStream("alarm clock.ttf");
             font = Font.createFont(Font.TRUETYPE_FONT, is);
+            // DEBUG: throw new Exception();
         } catch(@SuppressWarnings("unused") Exception e) {
             // choose a default font if the font cannot be loaded for some reason or other
-            font = new Font("Sans-Serif", Font.BOLD, 20);
+            font = new Font("Sans-Serif", Font.PLAIN, 20);
         }
-        return font;
-    }
+        // larger font, hopefully scales better
+        return font.deriveFont(80F);
+    } 
 }

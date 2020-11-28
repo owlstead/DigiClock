@@ -4,13 +4,13 @@ import static java.awt.RenderingHints.KEY_TEXT_ANTIALIASING;
 import static java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.geom.Rectangle2D;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -26,8 +26,8 @@ public class ClockPanel extends JPanel {
     private static final String MAX_SIZED_TIME_STRING = "00:00:00";
 
     // i.e. 10 percent on both sides
-    private static final float MARGIN_PART_X = 0.01F;
-    private static final float MARGIN_PART_Y = 0.1F;
+    private static final float MARGIN_PART_X = 0.02F;
+    private static final float MARGIN_PART_Y = 0.05F;
 
     public class ClockTimerTask extends TimerTask {
 
@@ -94,20 +94,24 @@ public class ClockPanel extends JPanel {
     public synchronized void drawDigitalClock(Graphics graphics) {
         super.paintComponent(graphics);
 
-        var dimension = getSize();
-        var marginSizeX = dimension.width * MARGIN_PART_X;
-        var marginSizeY = dimension.height * MARGIN_PART_Y;
+        // var dimension = getSize();
+        var componentBounds = getBounds().getBounds2D();
+        var marginSizeX = componentBounds.getWidth() * MARGIN_PART_X;
+        var marginSizeY = componentBounds.getHeight() * MARGIN_PART_Y;
         var marginSizeMin = Math.min(marginSizeX, marginSizeY);
 
         if (sizeChanged) {
-            var innerDimension = new Dimension((int) (dimension.width - 2 * marginSizeMin),
-                    (int) (dimension.height - 2 * marginSizeMin));
+            var innerBounds = new Rectangle2D.Double(0.0, 0.0, componentBounds.getWidth() - 2 * marginSizeMin,
+                    componentBounds.getHeight() - 2 * marginSizeMin);
 
-            currentClockFont = resizeFontForDimension(graphics, clockFont, MAX_SIZED_TIME_STRING, innerDimension);
+            // currentClockFont = resizeFontForDimension(graphics, clockFont, MAX_SIZED_TIME_STRING, innerDimension);
+            currentClockFont = resizeFontToFitInBox(graphics, clockFont, MAX_SIZED_TIME_STRING, innerBounds);
             sizeChanged = false;
         }
 
-        graphics.setColor(foregroundColor);
+        var graphics2 = (Graphics2D) graphics;
+        
+        graphics2.setColor(foregroundColor);
 
         // --> would it be a good idea to create my own graphics rendering here? <--
         // e.g. var clockGraphics = graphics.create();
@@ -116,15 +120,18 @@ public class ClockPanel extends JPanel {
             ((Graphics2D) graphics).setRenderingHint(KEY_TEXT_ANTIALIASING, VALUE_TEXT_ANTIALIAS_ON);
         }
 
-        graphics.setFont(currentClockFont);
+        graphics2.setFont(currentClockFont);
 
-        var metrics = graphics.getFontMetrics(currentClockFont);
-        float xCenter = dimension.width * 0.5F;
-        float yCenter = dimension.height * 0.5F;
+        var metrics = graphics2.getFontMetrics(currentClockFont);
+        var metrics2 = metrics.getLineMetrics(MAX_SIZED_TIME_STRING, graphics2);
+        double xCenter = componentBounds.getWidth() * 0.5;
+        double yCenter = componentBounds.getHeight() * 0.5;
+        
+        
         String timeString = getTimeString(precision, LocalTime.now());
 
-        int x = (int) (xCenter - metrics.stringWidth(MAX_SIZED_TIME_STRING) / 2.0F);
-        int y = (int) (yCenter + metrics.getHeight() / 2 - metrics.getDescent() / 2);
+        int x = (int) (xCenter - metrics.stringWidth(MAX_SIZED_TIME_STRING) / 2.0);
+        int y = (int) (yCenter + metrics2.getHeight() / 2.0 - metrics.getDescent() / 2);
 
         graphics.drawString(timeString, x, y);
 
@@ -143,7 +150,7 @@ public class ClockPanel extends JPanel {
         var pattern = DateTimeFormatter.ofPattern("HH:mm:ss");
         return time.format(pattern);
     }
-
+    
     /**
      * Calculates the best font size to fit in a certain dimension (in pixels) given a graphics context, a font-type and
      * a maximum sized text; then returns the font.
@@ -151,22 +158,18 @@ public class ClockPanel extends JPanel {
      * @param graphics     the graphics for which to compute the dimensions
      * @param font         the font for which to compute the dimension
      * @param text         the (max sized) text to display
-     * @param forDimension the size in which the text needs to be displayed, excluding margins
+     * @param box the size in which the text needs to be displayed, excluding margins
      * @return the correctly sized font
      */
-    private static Font resizeFontForDimension(Graphics graphics, Font font, String text, Dimension forDimension) {
+    private static Font resizeFontToFitInBox(Graphics graphics, Font font, String text, Rectangle2D box) {
         // get metrics from the graphics
-        var metrics = graphics.getFontMetrics(font);
-        var lineMetrics = metrics.getLineMetrics(MAX_SIZED_TIME_STRING, graphics);
-
-        int orgTextWidth = metrics.stringWidth(text);
-        float ascent = lineMetrics.getAscent();
-
+        var orgBounds = graphics.getFontMetrics(font).getStringBounds(MAX_SIZED_TIME_STRING, graphics);
+        
         // calculate font size
-        float difTextWidth = (float) forDimension.width / (float) orgTextWidth;
-        float difTextHeigth = (float) forDimension.height / ascent;
-        float minDif = Math.min(difTextWidth, difTextHeigth);
+        double difTextWidth = box.getWidth() / orgBounds.getWidth();
+        double difTextHeigth = box.getHeight() / orgBounds.getHeight();
+        double minDif = Math.min(difTextWidth, difTextHeigth);
 
-        return font.deriveFont(font.getSize2D() * minDif);
+        return font.deriveFont((float) (font.getSize2D() * minDif));
     }
 }

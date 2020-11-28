@@ -7,7 +7,9 @@ public final class ClockUtil {
     
     private static final float MM_IN_INCH = 0.0393701F;
     private static final int RES = Toolkit.getDefaultToolkit().getScreenResolution();
-
+    private static final float PIXELS_PER_POINT = RES / 72.0F;
+    
+    
     private ClockUtil() {
         // avoid instantiation
     }
@@ -16,6 +18,10 @@ public final class ClockUtil {
         return new Dimension(mmToPixels(dimInMM.width), mmToPixels(dimInMM.height));
     }
 
+    public static int pointsToPixels(double points) {
+        return (int) (points * PIXELS_PER_POINT);
+    }
+    
     public static int mmToPixels(int mm) {
         return (int) (mm * MM_IN_INCH * RES);
     }
