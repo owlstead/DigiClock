@@ -26,7 +26,8 @@ public class ClockPanel extends JPanel {
     private static final String MAX_SIZED_TIME_STRING = "00:00:00";
 
     // i.e. 10 percent on both sides
-    private static final float MARGIN_PART = 0.1F;
+    private static final float MARGIN_PART_X = 0.01F;
+    private static final float MARGIN_PART_Y = 0.1F;
 
     public class ClockTimerTask extends TimerTask {
 
@@ -94,8 +95,8 @@ public class ClockPanel extends JPanel {
         super.paintComponent(graphics);
 
         var dimension = getSize();
-        var marginSizeX = dimension.width * MARGIN_PART;
-        var marginSizeY = dimension.height * MARGIN_PART;
+        var marginSizeX = dimension.width * MARGIN_PART_X;
+        var marginSizeY = dimension.height * MARGIN_PART_Y;
         var marginSizeMin = Math.min(marginSizeX, marginSizeY);
 
         if (sizeChanged) {
